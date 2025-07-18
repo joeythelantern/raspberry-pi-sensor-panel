@@ -73,20 +73,15 @@
             <div class="stat-card">
                 <h2 class="stat-title">CPU</h2>
                 <p class="stat-value"><span id="cpu-usage">--</span><span class="stat-unit">%</span></p>
-                <p class="text-gray-400 text-sm mt-1">Temp: <span id="cpu-temp">--</span>°C</p>
-            </div>
-
-            <!-- GPU Card -->
-            <div class="stat-card">
-                <h2 class="stat-title">GPU</h2>
-                <p class="stat-value"><span id="gpu-usage">--</span><span class="stat-unit">%</span></p>
-                <p class="text-gray-400 text-sm mt-1">Temp: <span id="gpu-temp">--</span>°C</p>
+                <!-- Updated to display System Boot Time as a string -->
+                <p class="text-gray-400 text-sm mt-1">Boot Time: <span id="cpu-boot-time">--</span></p>
             </div>
 
             <!-- Memory Card -->
             <div class="stat-card">
                 <h2 class="stat-title">Memory</h2>
                 <p class="stat-value"><span id="mem-usage">--</span><span class="stat-unit">%</span></p>
+                <!-- Memory values converted from MB to GB for display -->
                 <p class="text-gray-400 text-sm mt-1"><span id="mem-used">--</span>/<span id="mem-total">--</span> GB</p>
             </div>
 
@@ -113,19 +108,21 @@
 
     <script type="module">
         // --- Configuration ---
-        const API_BASE_URL = 'http://localhost:1337'; 
+        const API_BASE_URL = 'http://127.0.0.1:1337'; 
         const FETCH_INTERVAL_MS = 5000;
         const MAX_DATA_POINTS = 20;
 
         // --- Chart Instances & State ---
         let diskIoChart, networkIoChart;
-        let lastDiskRead = 0, lastDiskWrite = 0, lastNetReceived = 0, lastNetSent = 0;
+        // Store last cumulative values to calculate rates
+        let lastDiskRead = 0, lastDiskWrite = 0;
+        let lastNetReceived = 0, lastNetSent = 0;
         let isInitialFetch = true;
         
         // --- Data arrays for charts ---
         let diskData = { read: [], write: [] };
         let networkData = { received: [], sent: [] };
-        let categories = [];
+        let categories = []; // X-axis labels for time
 
         /**
          * @function createApexChart
@@ -158,7 +155,7 @@
                     }
                 },
                 xaxis: {
-                    categories: [],
+                    categories: [], // Will be populated dynamically
                     labels: {
                         style: { colors: '#9ca3af' },
                         show: false // Hide x-axis labels to save space
@@ -206,40 +203,48 @@
 
         /**
          * @function updateUI
-         * @description Updates all text and chart elements on the page.
+         * @description Updates all text and chart elements on the page with new data.
+         * @param {object} data - The latest system stats received from the API.
          */
         function updateUI(data) {
             // --- Update Text Stats ---
             document.getElementById('cpu-usage').textContent = data.cpu.usage?.toFixed(1) ?? '--';
-            document.getElementById('cpu-temp').textContent = data.cpu.temperature?.toFixed(1) ?? '--';
-            document.getElementById('gpu-usage').textContent = data.gpu.usage?.toFixed(1) ?? '--';
-            document.getElementById('gpu-temp').textContent = data.gpu.temperature?.toFixed(1) ?? '--';
+            // Display boot time string directly
+            document.getElementById('cpu-boot-time').textContent = data.cpu.temperature ?? '--'; 
             
             const memUsagePercent = (data.memory.used / data.memory.total) * 100;
             document.getElementById('mem-usage').textContent = isNaN(memUsagePercent) ? '--' : memUsagePercent.toFixed(1);
-            document.getElementById('mem-used').textContent = (data.memory.used / (1024**3)).toFixed(2);
-            document.getElementById('mem-total').textContent = (data.memory.total / (1024**3)).toFixed(2);
+            // Convert MB to GB for display
+            document.getElementById('mem-used').textContent = (data.memory.used / (1024**2)).toFixed(2); 
+            document.getElementById('mem-total').textContent = (data.memory.total / (1024**2)).toFixed(2);
             
             const updateDate = new Date(data.timestamp);
             document.getElementById('last-update').textContent = updateDate.toLocaleTimeString();
             document.getElementById('last-update-date').textContent = updateDate.toLocaleDateString();
 
             // --- Calculate I/O Rates & Update Chart Data ---
+            // Only calculate rates after the first fetch to avoid large initial deltas
             if (!isInitialFetch) {
-                const intervalSeconds = FETCH_INTERVAL_MS / 1000;
-                const diskReadRate = Math.max(0, (data.disk.io.read - lastDiskRead) / intervalSeconds / 1024);
-                const diskWriteRate = Math.max(0, (data.disk.io.write - lastDiskWrite) / intervalSeconds / 1024);
-                const netReceivedRate = Math.max(0, (data.network.io.received - lastNetReceived) / intervalSeconds / 1024);
-                const netSentRate = Math.max(0, (data.network.io.sent - lastNetSent) / intervalSeconds / 1024);
+                // The API sends cumulative bytes, so we calculate the rate per interval.
+                // The Python sender uses a 2-second sleep for its IO calculations,
+                // but our UI fetches every 5 seconds. The API's 'read'/'write' values
+                // are cumulative from system boot, so we need to calculate the delta
+                // between consecutive fetches from the API.
+                const intervalSeconds = FETCH_INTERVAL_MS / 1000; // UI fetch interval is 5 seconds
 
-                // Add new data
-                diskData.read.push(diskReadRate.toFixed(2));
-                diskData.write.push(diskWriteRate.toFixed(2));
-                networkData.received.push(netReceivedRate.toFixed(2));
-                networkData.sent.push(netSentRate.toFixed(2));
+                const diskReadRate = Math.max(0, (data.disk.io.read - lastDiskRead) / intervalSeconds / 1024); // Bytes/s to KB/s
+                const diskWriteRate = Math.max(0, (data.disk.io.write - lastDiskWrite) / intervalSeconds / 1024); // Bytes/s to KB/s
+                const netReceivedRate = Math.max(0, (data.network.io.received - lastNetReceived) / intervalSeconds / 1024); // Bytes/s to KB/s
+                const netSentRate = Math.max(0, (data.network.io.sent - lastNetSent) / intervalSeconds / 1024); // Bytes/s to KB/s
+
+                // Add new data points
+                diskData.read.push(parseFloat(diskReadRate.toFixed(2)));
+                diskData.write.push(parseFloat(diskWriteRate.toFixed(2)));
+                networkData.received.push(parseFloat(netReceivedRate.toFixed(2)));
+                networkData.sent.push(parseFloat(netSentRate.toFixed(2)));
                 categories.push(updateDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
 
-                // Trim old data
+                // Trim old data to maintain MAX_DATA_POINTS
                 if (categories.length > MAX_DATA_POINTS) {
                     categories.shift();
                     diskData.read.shift();
@@ -256,14 +261,22 @@
                 networkIoChart.updateOptions({ xaxis: { categories: categories } });
             }
 
-            // Store current values for the next rate calculation
+            // Store current cumulative values for the next rate calculation
             lastDiskRead = data.disk.io.read;
             lastDiskWrite = data.disk.io.write;
             lastNetReceived = data.network.io.received;
             lastNetSent = data.network.io.sent;
+            
+            // After the first successful fetch, set isInitialFetch to false
             if (isInitialFetch) isInitialFetch = false;
         }
         
+        /**
+         * @function setStatus
+         * @description Updates the connection status indicator and text.
+         * @param {string} status - 'ok', 'error', or 'connecting'.
+         * @param {string} message - The message to display.
+         */
         function setStatus(status, message) {
             const indicator = document.getElementById('status-indicator');
             const text = document.getElementById('status-text');
@@ -271,19 +284,39 @@
             text.textContent = message;
         }
 
+        /**
+         * @function fetchAndDisplayStats
+         * @description Fetches the latest stats from the API and updates the UI.
+         */
         async function fetchAndDisplayStats() {
             try {
                 const res = await fetch(`${API_BASE_URL}/stats/latest`);
-                if (!res.ok) throw new Error(`API responded with ${res.status}`);
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    throw new Error(`API responded with ${res.status}: ${errorText}`);
+                }
                 const data = await res.json();
                 updateUI(data);
                 setStatus('ok', 'Connected');
             } catch (error) {
                 console.error("Failed to fetch latest data:", error);
                 setStatus('error', 'Connection Failed');
+                // Reset chart data on error to prevent stale data display
+                diskData = { read: [], write: [] };
+                networkData = { received: [], sent: [] };
+                categories = [];
+                diskIoChart.updateSeries([{ data: [] }, { data: [] }]);
+                networkIoChart.updateSeries([{ data: [] }, { data: [] }]);
+                diskIoChart.updateOptions({ xaxis: { categories: [] } });
+                networkIoChart.updateOptions({ xaxis: { categories: [] } });
+                isInitialFetch = true; // Reset initial fetch flag on error
             }
         }
 
+        /**
+         * @function main
+         * @description Initializes charts and starts the data fetching loop.
+         */
         function main() {
             // Initialize charts
             diskIoChart = createApexChart('diskIoChart', [
@@ -301,7 +334,8 @@
             setInterval(fetchAndDisplayStats, FETCH_INTERVAL_MS);
         }
 
-        main();
+        // Start the application when the DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', main);
     </script>
 </body>
 </html>
