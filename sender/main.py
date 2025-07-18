@@ -3,10 +3,10 @@
 import psutil
 import time
 import datetime
-import requests # Import the requests library for making HTTP requests
+import requests  # Import the requests library for making HTTP requests
 
 # Configuration for the API endpoint
-API_URL = "http://127.0.0.1:1337/stats" # Ensure this matches your API server's address and port
+API_URL = "http://127.0.0.1:1337/stats"  # Ensure this matches your API server's address and port
 
 def get_size(bytes, suffix="B"):
     """
@@ -130,7 +130,7 @@ def main():
             break
         except Exception as e:
             print(f"An error occurred: {e}")
-            time.sleep(5) # Wait before retrying after an error
+            time.sleep(5)  # Wait before retrying after an error
 
 if __name__ == "__main__":
     main()

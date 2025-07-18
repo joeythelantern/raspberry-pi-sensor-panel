@@ -1,341 +1,416 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>System Stats Dashboard</title>
-    
-    <!-- Tailwind CSS for styling -->
+
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- ApexCharts for beautiful, modern charts -->
+
+    <!-- ApexCharts -->
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-    
-    <!-- Google Fonts for a nicer look -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Google Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
 
     <style>
-        /* Custom styles to complement Tailwind */
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #111827; /* Dark gray background */
-            color: #e5e7eb; /* Light gray text */
-        }
-        .stat-card {
-            background-color: #1f2937; /* Lighter gray for cards */
-            border-radius: 0.75rem;
-            padding: 1rem; /* Reduced padding */
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-        }
-        .stat-title {
-            font-weight: 600;
-            color: #9ca3af; /* Muted title color */
-            font-size: 0.75rem; /* Smaller title font */
-            text-transform: uppercase;
-        }
-        .stat-value {
-            font-weight: 700;
-            font-size: 1.875rem; /* Reduced value font size */
-            color: #f9fafb;
-        }
-        .stat-unit {
-            font-size: 0.875rem; /* Smaller unit font */
-            color: #6b7280;
-            margin-left: 0.25rem;
-        }
-        #status-indicator {
-            transition: background-color 0.5s ease;
-        }
-        /* Style for ApexCharts to match the dark theme */
-        .apexcharts-tooltip-title, .apexcharts-tooltip-text {
-            color: #1f2937;
-        }
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #111827;
+        color: #e5e7eb;
+      }
+      .stat-card {
+        background-color: #1f2937;
+        border-radius: 0.75rem;
+        padding: 1rem;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1),
+          0 2px 4px -2px rgb(0 0 0 / 0.1);
+      }
+      .stat-title {
+        font-weight: 600;
+        color: #9ca3af;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+      }
+      .stat-value {
+        font-weight: 700;
+        font-size: 1.875rem;
+        color: #f9fafb;
+      }
+      .stat-unit {
+        font-size: 0.875rem;
+        color: #6b7280;
+        margin-left: 0.25rem;
+      }
+      #status-indicator {
+        transition: background-color 0.5s ease;
+      }
+      .apexcharts-tooltip-title,
+      .apexcharts-tooltip-text {
+        color: #1f2937;
+      }
     </style>
-</head>
-<body class="p-4">
-
+  </head>
+  <body class="p-4">
     <main class="w-full mx-auto">
-        <!-- Header -->
-        <div class="flex justify-between items-center mb-4">
-            <h1 class="text-xl font-bold text-white">System Monitor</h1>
-            <div class="flex items-center space-x-2">
-                <div id="status-indicator" class="w-3 h-3 rounded-full bg-yellow-500"></div>
-                <span id="status-text" class="text-sm text-gray-400">Connecting...</span>
-            </div>
+      <div class="flex justify-between items-center mb-4">
+        <h1 class="text-xl font-bold text-white">System Monitor</h1>
+        <div class="flex items-center space-x-2">
+          <div
+            id="status-indicator"
+            class="w-3 h-3 rounded-full bg-yellow-500"
+          ></div>
+          <span id="status-text" class="text-sm text-gray-400"
+            >Connecting...</span
+          >
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <!-- IP Card (only visible if no stats) -->
+        <div id="client-ip-card" class="stat-card col-span-2">
+          <h2 class="stat-title">Local IP Address(es)</h2>
+          <ul
+            id="client-ip-value"
+            class="stat-value text-xl list-disc list-inside"
+          >
+            <li>Loading IPs...</li>
+          </ul>
+          <p class="text-gray-400 text-sm mt-1">IPs reported by the server.</p>
         </div>
 
-        <!-- Stats Grid -->
-        <div class="grid grid-cols-2 gap-4">
-            
-            <!-- CPU Card -->
+        <!-- The rest of the stats cards, hidden initially -->
+        <div
+          id="stats-cards"
+          style="display: none; width: 100%; grid-column: span 2"
+        >
+          <div class="grid grid-cols-2 gap-4">
             <div class="stat-card">
-                <h2 class="stat-title">CPU</h2>
-                <p class="stat-value"><span id="cpu-usage">--</span><span class="stat-unit">%</span></p>
-                <!-- Updated to display System Boot Time as a string -->
-                <p class="text-gray-400 text-sm mt-1">Boot Time: <span id="cpu-boot-time">--</span></p>
+              <h2 class="stat-title">CPU</h2>
+              <p class="stat-value">
+                <span id="cpu-usage">--</span><span class="stat-unit">%</span>
+              </p>
+              <p class="text-gray-400 text-sm mt-1">
+                Boot Time: <span id="cpu-boot-time">--</span>
+              </p>
             </div>
 
-            <!-- Memory Card -->
             <div class="stat-card">
-                <h2 class="stat-title">Memory</h2>
-                <p class="stat-value"><span id="mem-usage">--</span><span class="stat-unit">%</span></p>
-                <!-- Memory values converted from MB to GB for display -->
-                <p class="text-gray-400 text-sm mt-1"><span id="mem-used">--</span>/<span id="mem-total">--</span> GB</p>
+              <h2 class="stat-title">Memory</h2>
+              <p class="stat-value">
+                <span id="mem-usage">--</span><span class="stat-unit">%</span>
+              </p>
+              <p class="text-gray-400 text-sm mt-1">
+                <span id="mem-used">--</span> /
+                <span id="mem-total">--</span> MB
+              </p>
             </div>
 
-            <!-- Last Update Card -->
-            <div class="stat-card">
-                <h2 class="stat-title">Last Update</h2>
-                <p class="stat-value text-xl" id="last-update">--:--:--</p>
-                <p class="text-gray-400 text-sm mt-1" id="last-update-date">Waiting...</p>
+            <div class="stat-card col-span-2">
+              <h2 class="stat-title">Last Update</h2>
+              <p class="stat-value text-xl" id="last-update">--:--:--</p>
+              <p class="text-gray-400 text-sm mt-1" id="last-update-date">
+                Waiting...
+              </p>
             </div>
 
-            <!-- Disk I/O Chart Card -->
             <div class="stat-card col-span-2 p-0 overflow-hidden">
-                <h2 class="stat-title px-4 pt-4">Disk I/O (KB/s)</h2>
-                <div id="diskIoChart" style="height: 300px;"></div>
+              <h2 class="stat-title px-4 pt-4">Disk I/O (MB/s)</h2>
+              <div id="diskIoChart" style="height: 300px"></div>
             </div>
 
-            <!-- Network I/O Chart Card -->
             <div class="stat-card col-span-2 p-0 overflow-hidden">
-                <h2 class="stat-title px-4 pt-4">Network I/O (KB/s)</h2>
-                <div id="networkIoChart" style="height: 300px;"></div>
+              <h2 class="stat-title px-4 pt-4">Network I/O (MB/s)</h2>
+              <div id="networkIoChart" style="height: 300px"></div>
             </div>
+          </div>
         </div>
+      </div>
     </main>
 
     <script type="module">
-        // --- Configuration ---
-        const API_BASE_URL = 'http://127.0.0.1:1337'; 
-        const FETCH_INTERVAL_MS = 5000;
-        const MAX_DATA_POINTS = 20;
+      const API_BASE_URL = "http://127.0.0.1:1337";
+      const FETCH_INTERVAL_MS = 5000;
+      const MAX_DATA_POINTS = 20;
 
-        // --- Chart Instances & State ---
-        let diskIoChart, networkIoChart;
-        // Store last cumulative values to calculate rates
-        let lastDiskRead = 0, lastDiskWrite = 0;
-        let lastNetReceived = 0, lastNetSent = 0;
-        let isInitialFetch = true;
-        
-        // --- Data arrays for charts ---
-        let diskData = { read: [], write: [] };
-        let networkData = { received: [], sent: [] };
-        let categories = []; // X-axis labels for time
+      let diskIoChart, networkIoChart;
+      let lastDiskRead = 0,
+        lastDiskWrite = 0;
+      let lastNetReceived = 0,
+        lastNetSent = 0;
+      let isInitialFetch = true;
+      let ipFetchIntervalId = null;
 
-        /**
-         * @function createApexChart
-         * @description Initializes a new ApexChart instance with common settings.
-         */
-        function createApexChart(elementId, seriesConfig, colors) {
-            const options = {
-                chart: {
-                    type: 'area',
-                    height: '100%',
-                    animations: {
-                        enabled: true,
-                        easing: 'linear',
-                        dynamicAnimation: {
-                            speed: 1000
-                        }
-                    },
-                    toolbar: { show: false },
-                    zoom: { enabled: false }
-                },
-                series: seriesConfig,
-                colors: colors,
-                dataLabels: { enabled: false },
-                stroke: { curve: 'smooth', width: 2 },
-                fill: {
-                    type: 'gradient',
-                    gradient: {
-                        opacityFrom: 0.6,
-                        opacityTo: 0.05,
-                    }
-                },
-                xaxis: {
-                    categories: [], // Will be populated dynamically
-                    labels: {
-                        style: { colors: '#9ca3af' },
-                        show: false // Hide x-axis labels to save space
-                    },
-                    axisBorder: { show: false },
-                    axisTicks: { show: false }
-                },
-                yaxis: {
-                    labels: {
-                        style: { colors: '#9ca3af' },
-                        minWidth: 35, // Reserve space for labels
-                        formatter: (val) => {
-                            if (typeof val === 'undefined' || val === null) return '0';
-                            return val.toFixed(0)
-                        }
-                    }
-                },
-                grid: {
-                    borderColor: '#374151',
-                    yaxis: { lines: { show: true } },
-                    xaxis: { lines: { show: false } },
-                    padding: {
-                        left: 5, // Reduced left padding, as minWidth handles spacing
-                        right: 15
-                    }
-                },
-                legend: {
-                    show: true,
-                    position: 'top',
-                    horizontalAlign: 'left',
-                    fontSize: '12px',
-                    labels: { colors: '#d1d5db' },
-                    offsetY: -5,
-                    itemMargin: {
-                        horizontal: 10
-                    }
-                },
-                tooltip: { theme: 'dark' }
-            };
+      let diskData = { read: [], write: [] };
+      let networkData = { received: [], sent: [] };
+      let categories = [];
 
-            const chart = new ApexCharts(document.querySelector(`#${elementId}`), options);
-            chart.render();
-            return chart;
+      function createApexChart(elementId, seriesConfig, colors) {
+        const options = {
+          chart: {
+            type: "area",
+            height: "100%",
+            animations: {
+              enabled: true,
+              easing: "linear",
+              dynamicAnimation: { speed: 1000 },
+            },
+            toolbar: { show: false },
+            zoom: { enabled: false },
+          },
+          series: seriesConfig,
+          colors: colors,
+          dataLabels: { enabled: false },
+          stroke: { curve: "smooth", width: 2 },
+          fill: {
+            type: "gradient",
+            gradient: { opacityFrom: 0.6, opacityTo: 0.05 },
+          },
+          xaxis: {
+            categories: [],
+            labels: { style: { colors: "#9ca3af" }, show: false },
+            axisBorder: { show: false },
+            axisTicks: { show: false },
+          },
+          yaxis: {
+            labels: {
+              style: { colors: "#9ca3af" },
+              minWidth: 35,
+              formatter: (val) =>
+                val === undefined || val === null ? "0" : val.toFixed(0),
+            },
+          },
+          grid: {
+            borderColor: "#374151",
+            yaxis: { lines: { show: true } },
+            xaxis: { lines: { show: false } },
+            padding: { left: 5, right: 15 },
+          },
+          legend: {
+            show: true,
+            position: "top",
+            horizontalAlign: "left",
+            fontSize: "12px",
+            labels: { colors: "#d1d5db" },
+            offsetY: -5,
+            itemMargin: { horizontal: 10 },
+          },
+          tooltip: { theme: "dark" },
+        };
+        const chart = new ApexCharts(
+          document.querySelector(`#${elementId}`),
+          options
+        );
+        chart.render();
+        return chart;
+      }
+
+      function updateUI(data) {
+        // If data is empty or invalid, show IP card, hide stats
+        if (!data || Object.keys(data).length === 0) {
+          showIPCard();
+          return;
+        }
+        hideIPCard();
+
+        // Update text stats
+        document.getElementById("cpu-usage").textContent =
+          data.cpu?.usage?.toFixed(1) ?? "--";
+        document.getElementById("cpu-boot-time").textContent =
+          data.cpu?.temperature ?? "--";
+
+        const memUsedMB = data.memory?.used ?? 0;
+        const memTotalMB = data.memory?.total ?? 1; // avoid div by zero
+        const memUsagePercent = (memUsedMB / memTotalMB) * 100;
+        document.getElementById("mem-usage").textContent = isNaN(
+          memUsagePercent
+        )
+          ? "--"
+          : memUsagePercent.toFixed(1);
+        document.getElementById("mem-used").textContent = memUsedMB.toFixed(1);
+        document.getElementById("mem-total").textContent =
+          memTotalMB.toFixed(1);
+
+        const updateDate = new Date(data.timestamp);
+        document.getElementById("last-update").textContent =
+          updateDate.toLocaleTimeString();
+        document.getElementById("last-update-date").textContent =
+          updateDate.toLocaleDateString();
+
+        if (!isInitialFetch) {
+          const intervalSeconds = FETCH_INTERVAL_MS / 1000;
+
+          const diskReadRate = Math.max(
+            0,
+            (data.disk.io.read - lastDiskRead) / intervalSeconds
+          );
+          const diskWriteRate = Math.max(
+            0,
+            (data.disk.io.write - lastDiskWrite) / intervalSeconds
+          );
+          const netReceivedRate = Math.max(
+            0,
+            (data.network.io.received - lastNetReceived) / intervalSeconds
+          );
+          const netSentRate = Math.max(
+            0,
+            (data.network.io.sent - lastNetSent) / intervalSeconds
+          );
+
+          diskData.read.push(parseFloat(diskReadRate.toFixed(2)));
+          diskData.write.push(parseFloat(diskWriteRate.toFixed(2)));
+          networkData.received.push(parseFloat(netReceivedRate.toFixed(2)));
+          networkData.sent.push(parseFloat(netSentRate.toFixed(2)));
+          categories.push(updateDate.toLocaleTimeString());
+
+          if (categories.length > MAX_DATA_POINTS) {
+            categories.shift();
+            diskData.read.shift();
+            diskData.write.shift();
+            networkData.received.shift();
+            networkData.sent.shift();
+          }
+
+          diskIoChart.updateSeries([
+            { data: diskData.read },
+            { data: diskData.write },
+          ]);
+          diskIoChart.updateOptions({ xaxis: { categories: categories } });
+
+          networkIoChart.updateSeries([
+            { data: networkData.received },
+            { data: networkData.sent },
+          ]);
+          networkIoChart.updateOptions({ xaxis: { categories: categories } });
         }
 
-        /**
-         * @function updateUI
-         * @description Updates all text and chart elements on the page with new data.
-         * @param {object} data - The latest system stats received from the API.
-         */
-        function updateUI(data) {
-            // --- Update Text Stats ---
-            document.getElementById('cpu-usage').textContent = data.cpu.usage?.toFixed(1) ?? '--';
-            // Display boot time string directly
-            document.getElementById('cpu-boot-time').textContent = data.cpu.temperature ?? '--'; 
-            
-            const memUsagePercent = (data.memory.used / data.memory.total) * 100;
-            document.getElementById('mem-usage').textContent = isNaN(memUsagePercent) ? '--' : memUsagePercent.toFixed(1);
-            // Convert MB to GB for display
-            document.getElementById('mem-used').textContent = (data.memory.used / (1024**2)).toFixed(2); 
-            document.getElementById('mem-total').textContent = (data.memory.total / (1024**2)).toFixed(2);
-            
-            const updateDate = new Date(data.timestamp);
-            document.getElementById('last-update').textContent = updateDate.toLocaleTimeString();
-            document.getElementById('last-update-date').textContent = updateDate.toLocaleDateString();
+        lastDiskRead = data.disk.io.read;
+        lastDiskWrite = data.disk.io.write;
+        lastNetReceived = data.network.io.received;
+        lastNetSent = data.network.io.sent;
 
-            // --- Calculate I/O Rates & Update Chart Data ---
-            // Only calculate rates after the first fetch to avoid large initial deltas
-            if (!isInitialFetch) {
-                // The API sends cumulative bytes, so we calculate the rate per interval.
-                // The Python sender uses a 2-second sleep for its IO calculations,
-                // but our UI fetches every 5 seconds. The API's 'read'/'write' values
-                // are cumulative from system boot, so we need to calculate the delta
-                // between consecutive fetches from the API.
-                const intervalSeconds = FETCH_INTERVAL_MS / 1000; // UI fetch interval is 5 seconds
+        if (isInitialFetch) isInitialFetch = false;
+      }
 
-                const diskReadRate = Math.max(0, (data.disk.io.read - lastDiskRead) / intervalSeconds / 1024); // Bytes/s to KB/s
-                const diskWriteRate = Math.max(0, (data.disk.io.write - lastDiskWrite) / intervalSeconds / 1024); // Bytes/s to KB/s
-                const netReceivedRate = Math.max(0, (data.network.io.received - lastNetReceived) / intervalSeconds / 1024); // Bytes/s to KB/s
-                const netSentRate = Math.max(0, (data.network.io.sent - lastNetSent) / intervalSeconds / 1024); // Bytes/s to KB/s
-
-                // Add new data points
-                diskData.read.push(parseFloat(diskReadRate.toFixed(2)));
-                diskData.write.push(parseFloat(diskWriteRate.toFixed(2)));
-                networkData.received.push(parseFloat(netReceivedRate.toFixed(2)));
-                networkData.sent.push(parseFloat(netSentRate.toFixed(2)));
-                categories.push(updateDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-
-                // Trim old data to maintain MAX_DATA_POINTS
-                if (categories.length > MAX_DATA_POINTS) {
-                    categories.shift();
-                    diskData.read.shift();
-                    diskData.write.shift();
-                    networkData.received.shift();
-                    networkData.sent.shift();
-                }
-
-                // Update charts
-                diskIoChart.updateSeries([{ data: diskData.read }, { data: diskData.write }]);
-                diskIoChart.updateOptions({ xaxis: { categories: categories } });
-
-                networkIoChart.updateSeries([{ data: networkData.received }, { data: networkData.sent }]);
-                networkIoChart.updateOptions({ xaxis: { categories: categories } });
-            }
-
-            // Store current cumulative values for the next rate calculation
-            lastDiskRead = data.disk.io.read;
-            lastDiskWrite = data.disk.io.write;
-            lastNetReceived = data.network.io.received;
-            lastNetSent = data.network.io.sent;
-            
-            // After the first successful fetch, set isInitialFetch to false
-            if (isInitialFetch) isInitialFetch = false;
+      function showIPCard() {
+        const clientIpCard = document.getElementById("client-ip-card");
+        const statsCards = document.getElementById("stats-cards");
+        clientIpCard.style.display = "block";
+        statsCards.style.display = "none";
+        if (!ipFetchIntervalId) {
+          ipFetchIntervalId = setInterval(
+            fetchAndDisplayLocalIps,
+            FETCH_INTERVAL_MS
+          );
         }
-        
-        /**
-         * @function setStatus
-         * @description Updates the connection status indicator and text.
-         * @param {string} status - 'ok', 'error', or 'connecting'.
-         * @param {string} message - The message to display.
-         */
-        function setStatus(status, message) {
-            const indicator = document.getElementById('status-indicator');
-            const text = document.getElementById('status-text');
-            indicator.className = `w-3 h-3 rounded-full ${status === 'ok' ? 'bg-green-500' : status === 'error' ? 'bg-red-500' : 'bg-yellow-500'}`;
-            text.textContent = message;
+      }
+
+      function hideIPCard() {
+        const clientIpCard = document.getElementById("client-ip-card");
+        const statsCards = document.getElementById("stats-cards");
+        clientIpCard.style.display = "none";
+        statsCards.style.display = "block";
+        if (ipFetchIntervalId) {
+          clearInterval(ipFetchIntervalId);
+          ipFetchIntervalId = null;
         }
+      }
 
-        /**
-         * @function fetchAndDisplayStats
-         * @description Fetches the latest stats from the API and updates the UI.
-         */
-        async function fetchAndDisplayStats() {
-            try {
-                const res = await fetch(`${API_BASE_URL}/stats/latest`);
-                if (!res.ok) {
-                    const errorText = await res.text();
-                    throw new Error(`API responded with ${res.status}: ${errorText}`);
-                }
-                const data = await res.json();
-                updateUI(data);
-                setStatus('ok', 'Connected');
-            } catch (error) {
-                console.error("Failed to fetch latest data:", error);
-                setStatus('error', 'Connection Failed');
-                // Reset chart data on error to prevent stale data display
-                diskData = { read: [], write: [] };
-                networkData = { received: [], sent: [] };
-                categories = [];
-                diskIoChart.updateSeries([{ data: [] }, { data: [] }]);
-                networkIoChart.updateSeries([{ data: [] }, { data: [] }]);
-                diskIoChart.updateOptions({ xaxis: { categories: [] } });
-                networkIoChart.updateOptions({ xaxis: { categories: [] } });
-                isInitialFetch = true; // Reset initial fetch flag on error
-            }
+      function setStatus(status, message) {
+        const indicator = document.getElementById("status-indicator");
+        const text = document.getElementById("status-text");
+        indicator.className = `w-3 h-3 rounded-full ${
+          status === "ok"
+            ? "bg-green-500"
+            : status === "error"
+            ? "bg-red-500"
+            : "bg-yellow-500"
+        }`;
+        text.textContent = message;
+      }
+
+      async function fetchAndDisplayLocalIps() {
+        const ipListElement = document.getElementById("client-ip-value");
+        try {
+          const res = await fetch(`${API_BASE_URL}/ips`);
+          if (!res.ok) throw new Error(`API responded with ${res.status}`);
+          const data = await res.json();
+          const ips = data.ips ?? data; // API returns { ips: [] }, fallback if structure changes
+
+          if (Array.isArray(ips) && ips.length > 0) {
+            ipListElement.innerHTML = ips
+              .map((ip) => `<li>${ip}</li>`)
+              .join("");
+          } else {
+            ipListElement.innerHTML = "<li>N/A</li>";
+          }
+        } catch (error) {
+          console.error("Error fetching local IPs:", error);
+          ipListElement.innerHTML = "<li>Error fetching IPs</li>";
         }
+      }
 
-        /**
-         * @function main
-         * @description Initializes charts and starts the data fetching loop.
-         */
-        function main() {
-            // Initialize charts
-            diskIoChart = createApexChart('diskIoChart', [
-                { name: 'Read', data: [] },
-                { name: 'Write', data: [] }
-            ], ['#34d399', '#fb923c']); // Green, Orange
+      async function fetchAndDisplayStats() {
+        try {
+          const res = await fetch(`${API_BASE_URL}/stats`);
+          if (!res.ok) throw new Error(`API responded with ${res.status}`);
+          const data = await res.json();
 
-            networkIoChart = createApexChart('networkIoChart', [
-                { name: 'Received', data: [] },
-                { name: 'Sent', data: [] }
-            ], ['#60a5fa', '#c084fc']); // Blue, Purple
+          // API returns an array of stats, get the last one
+          const lastStat =
+            Array.isArray(data) && data.length > 0
+              ? data[data.length - 1]
+              : null;
 
-            // Fetch data immediately and then set interval
-            fetchAndDisplayStats();
-            setInterval(fetchAndDisplayStats, FETCH_INTERVAL_MS);
+          if (!lastStat) {
+            showIPCard();
+            setStatus("connecting", "Waiting for stats...");
+            return;
+          }
+
+          updateUI(lastStat);
+          setStatus("ok", "Connected");
+        } catch (error) {
+          console.error("Failed to fetch latest data:", error);
+          setStatus("error", "Connection Failed");
+          showIPCard();
         }
+      }
 
-        // Start the application when the DOM is fully loaded
-        document.addEventListener('DOMContentLoaded', main);
+      function main() {
+        fetchAndDisplayLocalIps();
+        ipFetchIntervalId = setInterval(
+          fetchAndDisplayLocalIps,
+          FETCH_INTERVAL_MS
+        );
+
+        diskIoChart = createApexChart(
+          "diskIoChart",
+          [
+            { name: "Read", data: [] },
+            { name: "Write", data: [] },
+          ],
+          ["#34d399", "#fb923c"]
+        );
+
+        networkIoChart = createApexChart(
+          "networkIoChart",
+          [
+            { name: "Received", data: [] },
+            { name: "Sent", data: [] },
+          ],
+          ["#60a5fa", "#c084fc"]
+        );
+
+        fetchAndDisplayStats();
+        setInterval(fetchAndDisplayStats, FETCH_INTERVAL_MS);
+      }
+
+      document.addEventListener("DOMContentLoaded", main);
     </script>
-</body>
+  </body>
 </html>

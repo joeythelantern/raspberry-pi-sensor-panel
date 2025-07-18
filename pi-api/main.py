@@ -1,38 +1,42 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-import datetime
-from waitress import serve
+from fastapi import FastAPI, Request, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from typing import List
+import psutil
+import socket
+from collections import deque
 
-PORT = 1337
-MAX_HISTORY_LENGTH = 60
+app = FastAPI()
 
-stats_history = []
+# Allow CORS so UI apps on other origins can request
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Adjust as needed in prod
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-app = Flask(__name__)
-CORS(app)
+# Store last 60 stats submissions
+stats_storage = deque(maxlen=60)
 
-@app.route('/stats', methods=['POST'])
-def receive_stats():
-    new_stats = request.json
-    if not new_stats or 'timestamp' not in new_stats:
-        return jsonify(message='Invalid data format. Timestamp is required.'), 400
-    stats_history.insert(0, new_stats)
-    if len(stats_history) > MAX_HISTORY_LENGTH:
-        stats_history.pop()
-    print(f"Received new stats at {new_stats.get('timestamp')}. History size: {len(stats_history)}")
-    return jsonify(message='Stats received successfully.'), 201
+@app.post("/stats")
+async def post_stats(request: Request):
+    data = await request.json()
+    if not data:
+        raise HTTPException(status_code=400, detail="No JSON body received")
 
-@app.route('/stats/latest', methods=['GET'])
-def get_latest_stats():
-    if not stats_history:
-        return jsonify(message='No stats available yet.'), 404
-    latest_stats = stats_history[0]
-    return jsonify(latest_stats), 200
+    stats_storage.append(data)
+    return {"message": "Stats received", "stored": len(stats_storage)}
 
-@app.route('/stats/history', methods=['GET'])
-def get_stats_history():
-    return jsonify(stats_history), 200
+@app.get("/stats")
+def get_stats():
+    return list(stats_storage)
 
-if __name__ == '__main__':
-    print(f"Server is running on http://localhost:{PORT} (using Waitress)")
-    serve(app, host='0.0.0.0', port=PORT)
+@app.get("/ips")
+def get_ips():
+    ips = []
+    for iface_addrs in psutil.net_if_addrs().values():
+        for addr in iface_addrs:
+            if addr.family == socket.AF_INET:
+                ips.append(addr.address)
+    return {"ips": ips}
